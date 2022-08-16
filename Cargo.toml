@@ -27,5 +27,5 @@ chrono = "0.4"
 fern = "0.6.1"
 log = "0.4"
 serde = { version = "1.0.138", features = ["derive"] }
-serde-env = "0.0.2"
+serde-env = "0.0.3"
 tokio = { version = "1.19.2", features = ["full"] }
