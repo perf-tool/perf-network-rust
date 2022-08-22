@@ -15,10 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-pub const COMM_TYPE: &str = "COMM_TYPE";
-pub const COMM_TYPE_CLIENT: &str = "client";
-pub const COMM_TYPE_SERVER: &str = "server";
-pub const PROTOCOL_TYPE: &str = "PROTOCOL_TYPE";
-pub const PROTOCOL_TYPE_UDP: &str = "udp";
-pub const PROTOCOL_TYPE_TCP: &str = "tcp";
-pub const PROTOCOL_TYPE_HTTP: &str = "http";
+use crate::module::CommType;
+
+mod server;
+
+pub async fn start(comm_type: CommType) -> Result<(), Box<dyn std::error::Error>> {
+    match comm_type {
+        CommType::CLIENT => {
+            panic!("todo")
+        }
+        CommType::SERVER => {
+            server::start().await
+        }
+    }
+}
