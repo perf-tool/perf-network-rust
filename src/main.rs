@@ -19,10 +19,11 @@ use std::env;
 
 use crate::module::CommType;
 
-mod udp;
 mod constant;
+mod http;
 mod module;
 mod tcp;
+mod udp;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -69,11 +70,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         panic!("commType not set");
     }
     match env::var(constant::PROTOCOL_TYPE) {
-        Ok(produce_type) => {
-            if produce_type == constant::PROTOCOL_TYPE_UDP {
+        Ok(protocol_type) => {
+            if protocol_type == constant::PROTOCOL_TYPE_UDP {
                 udp::start(comm_type).await?;
-            } else if produce_type == constant::PROTOCOL_TYPE_TCP {
+            } else if protocol_type == constant::PROTOCOL_TYPE_TCP {
                 tcp::start(comm_type).await?;
+            } else if protocol_type == constant::PROTOCOL_TYPE_HTTP {
+                http::start(comm_type).await?;
             }
         }
         Err(_) => {
