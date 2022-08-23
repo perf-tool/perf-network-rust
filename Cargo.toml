@@ -27,7 +27,9 @@ chrono = "0.4"
 fern = "0.6.1"
 futures = "0.3"
 hyper = { version = "0.14", features = ["full"] }
+lazy_static = "1.4.0"
 log = "0.4"
+prometheus_exporter = "0.8"
 serde = { version = "1.0.144", features = ["derive"] }
 serde-env = "0.0.3"
 tokio = { version = "1.19.2", features = ["full"] }

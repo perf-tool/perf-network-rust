@@ -63,17 +63,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if protocol_type == constant::PROTOCOL_TYPE_UDP {
                 perfn::start(log_level, Config{
                     comm_type,
-                    protocol_type: ProtocolType::UDP
+                    protocol_type: ProtocolType::UDP,
+                    prometheus_metrics_disable: false,
                 }).await?;
             } else if protocol_type == constant::PROTOCOL_TYPE_TCP {
                 perfn::start(log_level, Config{
                     comm_type,
-                    protocol_type: ProtocolType::TCP
+                    protocol_type: ProtocolType::TCP,
+                    prometheus_metrics_disable: false,
                 }).await?;
             } else if protocol_type == constant::PROTOCOL_TYPE_HTTP {
                 perfn::start(log_level, Config{
                     comm_type,
-                    protocol_type: ProtocolType::HTTP
+                    protocol_type: ProtocolType::HTTP,
+                    prometheus_metrics_disable: false,
                 }).await?;
             }
         }

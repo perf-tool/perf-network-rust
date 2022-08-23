@@ -16,18 +16,31 @@
 // under the License.
 
 use std::net::SocketAddr;
+use std::time::Instant;
 
 use futures::Stream;
 use hyper::{Body, body, Method, Request, Response, StatusCode};
 use hyper::server::conn::Http;
 use hyper::service::service_fn;
+use lazy_static::lazy_static;
+use prometheus_exporter::prometheus::{register_counter, register_histogram};
+use prometheus_exporter::prometheus::core::{AtomicF64, GenericCounter};
+use prometheus_exporter::prometheus::Histogram;
 use tokio::net::TcpListener;
+
+lazy_static! {
+    static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_send_success_total", "http server send success total").expect("can not create counter http_server_send_success_total");
+    static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_send_fail_total", "http server send fail total").expect("can not create counter http_server_send_fail_total");
+    static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_http_server_send_success_latency_ms", "http server send success latency").expect("can not create histogram http_server_send_success_latency_ms");
+}
 
 async fn serve(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     match (req.method(), req.uri().path()) {
         (&Method::POST, "/perf") => {
-            let max = req.body().size_hint().1.unwrap_or(usize::MAX);
+            let start = Instant::now();
+            let max = req.body().size_hint().1.unwrap_or(0);
             if max > 64 * 1024 {
+                SEND_FAIL_COUNT.inc();
                 let mut resp = Response::new(Body::from("Body too big"));
                 *resp.status_mut() = hyper::StatusCode::PAYLOAD_TOO_LARGE;
                 return Ok(resp);
@@ -36,6 +49,8 @@ async fn serve(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
             let whole_body = body::to_bytes(req.into_body()).await?;
 
             let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
+            SEND_SUCCESS_COUNT.inc();
+            SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
             Ok(Response::new(Body::from(reversed_body)))
         }
         _ => {
