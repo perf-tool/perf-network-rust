@@ -29,6 +29,8 @@ use prometheus_exporter::prometheus::Histogram;
 use tokio::net::TcpListener;
 
 lazy_static! {
+    static ref RECV_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_recv_bytes_total", "http server recv bytes total").expect("can not create counter perf_network_http_server_recv_bytes_total");
+    static ref SEND_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_send_bytes_total", "http server send bytes total").expect("can not create counter perf_network_http_server_send_bytes_total");
     static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_send_success_total", "http server send success total").expect("can not create counter http_server_send_success_total");
     static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_http_server_send_fail_total", "http server send fail total").expect("can not create counter http_server_send_fail_total");
     static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_http_server_send_success_latency_ms", "http server send success latency").expect("can not create histogram http_server_send_success_latency_ms");
@@ -49,6 +51,8 @@ async fn serve(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
             let whole_body = body::to_bytes(req.into_body()).await?;
 
             let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
+            RECV_BYTES_COUNT.inc_by(reversed_body.len() as f64);
+            SEND_BYTES_COUNT.inc_by(reversed_body.len() as f64);
             SEND_SUCCESS_COUNT.inc();
             SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
             Ok(Response::new(Body::from(reversed_body)))
