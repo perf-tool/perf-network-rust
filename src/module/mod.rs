@@ -22,6 +22,12 @@ pub enum CommType {
     SERVER,
 }
 
+pub enum ProtocolType {
+    UDP,
+    TCP,
+    HTTP,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ClientConfig {
     client_conn_num: i32,
