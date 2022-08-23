@@ -26,6 +26,8 @@ use prometheus_exporter::prometheus::Histogram;
 use tokio::net::UdpSocket;
 
 lazy_static! {
+    static ref RECV_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_recv_bytes_total", "udp server recv bytes total").expect("can not create counter perf_network_udp_server_recv_bytes_total");
+    static ref SEND_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_send_bytes_total", "udp server send bytes total").expect("can not create counter perf_network_udp_server_send_bytes_total");
     static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_send_success_total", "udp server send success total").expect("can not create counter udp_server_send_success_total");
     static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_send_fail_total", "udp server send fail total").expect("can not create counter udp_server_send_fail_total");
     static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_udp_server_send_success_latency_ms", "udp server send success latency").expect("can not create histogram udp_server_send_success_latency_ms");
@@ -49,11 +51,13 @@ impl Server {
             // If so then we try to send it back to the original source, waiting
             // until it's writable and we're able to do so.
             if let Some((size, peer)) = to_send {
+                RECV_BYTES_COUNT.inc_by(size as f64);
                 let start = Instant::now();
                 let result = socket.send_to(&buf[..size], &peer).await;
 
                 match result {
                     Ok(send_size) => {
+                        SEND_BYTES_COUNT.inc_by(send_size as f64);
                         SEND_SUCCESS_COUNT.inc();
                         SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
                         log::debug!("Echoed {}/{} bytes to {}", send_size, size, peer);

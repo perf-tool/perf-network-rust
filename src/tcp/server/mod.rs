@@ -25,6 +25,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
 lazy_static! {
+    static ref RECV_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_recv_bytes_total", "tcp server recv bytes total").expect("can not create counter perf_network_tcp_server_recv_bytes_total");
+    static ref SEND_BYTES_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_send_bytes_total", "tcp server send bytes total").expect("can not create counter perf_network_tcp_server_send_bytes_total");
     static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_send_success_total", "tcp server send success total").expect("can not create counter tcp_server_send_success_total");
     static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_send_fail_total", "tcp server send fail total").expect("can not create counter tcp_server_send_fail_total");
     static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_tcp_server_send_success_latency_ms", "tcp server send success latency").expect("can not create histogram tcp_server_send_success_latency_ms");
@@ -60,6 +62,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
                     .read(&mut buf)
                     .await
                     .expect("failed to read data from socket");
+                RECV_BYTES_COUNT.inc_by(n as f64);
 
                 if n == 0 {
                     return;
@@ -70,6 +73,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
                 let result = socket.write_all(&buf[0..n]).await;
                 match result {
                     Ok(_) => {
+                        SEND_BYTES_COUNT.inc_by(n as f64);
                         SEND_SUCCESS_COUNT.inc();
                         SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
                     }
