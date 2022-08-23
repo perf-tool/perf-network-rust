@@ -17,13 +17,15 @@
 
 use std::env;
 
-use crate::module::CommType;
+use crate::module::{CommType, ProtocolType};
+use crate::perfn::Config;
 
 mod constant;
 mod http;
 mod module;
 mod tcp;
 mod udp;
+mod perfn;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,19 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             log::LevelFilter::Info
         }
     };
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        })
-        .level(log_level)
-        .chain(std::io::stdout())
-        .apply().unwrap();
     let env_comm_type = env::var(constant::COMM_TYPE)?;
     let comm_type: CommType;
     if env_comm_type == constant::COMM_TYPE_CLIENT {
@@ -72,11 +61,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match env::var(constant::PROTOCOL_TYPE) {
         Ok(protocol_type) => {
             if protocol_type == constant::PROTOCOL_TYPE_UDP {
-                udp::start(comm_type).await?;
+                perfn::start(log_level, Config{
+                    comm_type,
+                    protocol_type: ProtocolType::UDP
+                }).await?;
             } else if protocol_type == constant::PROTOCOL_TYPE_TCP {
-                tcp::start(comm_type).await?;
+                perfn::start(log_level, Config{
+                    comm_type,
+                    protocol_type: ProtocolType::TCP
+                }).await?;
             } else if protocol_type == constant::PROTOCOL_TYPE_HTTP {
-                http::start(comm_type).await?;
+                perfn::start(log_level, Config{
+                    comm_type,
+                    protocol_type: ProtocolType::HTTP
+                }).await?;
             }
         }
         Err(_) => {

@@ -15,10 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use perf_network_rust::http;
+use log::LevelFilter;
+
+use perf_network_rust::perfn;
 use perf_network_rust::module;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    http::start(module::CommType::SERVER).await
+    perfn::start(LevelFilter::Info, perfn::Config{
+        comm_type: module::CommType::SERVER,
+        protocol_type: module::ProtocolType::HTTP
+    }).await
 }

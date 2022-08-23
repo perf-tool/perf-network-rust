@@ -15,10 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use perf_network_rust::udp;
+use log::LevelFilter;
+
 use perf_network_rust::module;
+use perf_network_rust::perfn;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    udp::start(module::CommType::SERVER).await
+    perfn::start(LevelFilter::Info, perfn::Config{
+        comm_type: module::CommType::SERVER,
+        protocol_type: module::ProtocolType::UDP
+    }).await
 }
