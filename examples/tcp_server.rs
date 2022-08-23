@@ -24,6 +24,7 @@ use perf_network_rust::perfn;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     perfn::start(LevelFilter::Info, perfn::Config{
         comm_type: module::CommType::SERVER,
-        protocol_type: module::ProtocolType::TCP
+        protocol_type: module::ProtocolType::TCP,
+        prometheus_metrics_disable: false,
     }).await
 }
