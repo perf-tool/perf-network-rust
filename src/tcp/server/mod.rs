@@ -15,8 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use std::time::Instant;
+
+use lazy_static::lazy_static;
+use prometheus_exporter::prometheus::{register_counter, register_histogram};
+use prometheus_exporter::prometheus::core::{AtomicF64, GenericCounter};
+use prometheus_exporter::prometheus::Histogram;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+
+lazy_static! {
+    static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_send_success_total", "tcp server send success total").expect("can not create counter tcp_server_send_success_total");
+    static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_tcp_server_send_fail_total", "tcp server send fail total").expect("can not create counter tcp_server_send_fail_total");
+    static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_tcp_server_send_success_latency_ms", "tcp server send success latency").expect("can not create histogram tcp_server_send_success_latency_ms");
+}
 
 pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "0.0.0.0:5678";
@@ -54,10 +66,18 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 log::debug!("Echoed {} bytes {}", n, socket.peer_addr().unwrap().to_string());
 
-                socket
-                    .write_all(&buf[0..n])
-                    .await
-                    .expect("failed to write data to socket");
+                let start = Instant::now();
+                let result = socket.write_all(&buf[0..n]).await;
+                match result {
+                    Ok(_) => {
+                        SEND_SUCCESS_COUNT.inc();
+                        SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
+                    }
+                    Err(_) => {
+                        SEND_FAIL_COUNT.inc();
+                        log::error!("failed to write data to socket {}", socket.peer_addr().unwrap().to_string())
+                    }
+                }
             }
         });
     }

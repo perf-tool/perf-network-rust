@@ -17,8 +17,19 @@
 
 use std::io;
 use std::net::SocketAddr;
+use std::time::Instant;
 
+use lazy_static::lazy_static;
+use prometheus_exporter::prometheus::{register_counter, register_histogram};
+use prometheus_exporter::prometheus::core::{AtomicF64, GenericCounter};
+use prometheus_exporter::prometheus::Histogram;
 use tokio::net::UdpSocket;
+
+lazy_static! {
+    static ref SEND_SUCCESS_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_send_success_total", "udp server send success total").expect("can not create counter udp_server_send_success_total");
+    static ref SEND_FAIL_COUNT: GenericCounter<AtomicF64> = register_counter!("perf_network_udp_server_send_fail_total", "udp server send fail total").expect("can not create counter udp_server_send_fail_total");
+    static ref SEND_SUCCESS_LATENCY: Histogram = register_histogram!("perf_network_udp_server_send_success_latency_ms", "udp server send success latency").expect("can not create histogram udp_server_send_success_latency_ms");
+}
 
 struct Server {
     socket: UdpSocket,
@@ -38,9 +49,21 @@ impl Server {
             // If so then we try to send it back to the original source, waiting
             // until it's writable and we're able to do so.
             if let Some((size, peer)) = to_send {
-                let amt = socket.send_to(&buf[..size], &peer).await?;
+                let start = Instant::now();
+                let result = socket.send_to(&buf[..size], &peer).await;
 
-                log::debug!("Echoed {}/{} bytes to {}", amt, size, peer);
+                match result {
+                    Ok(send_size) => {
+                        SEND_SUCCESS_COUNT.inc();
+                        SEND_SUCCESS_LATENCY.observe(start.elapsed().as_millis() as f64);
+                        log::debug!("Echoed {}/{} bytes to {}", send_size, size, peer);
+                    }
+                    Err(_) => {
+                        SEND_FAIL_COUNT.inc();
+                        log::error!("failed to write data to {}", peer);
+                    }
+                }
+
             }
 
             // If we're here then `to_send` is `None`, so we take a look for the
