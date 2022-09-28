@@ -32,7 +32,7 @@ log = "0.4"
 prometheus_exporter = "0.8"
 serde = { version = "1.0.145", features = ["derive"] }
 serde-env = "0.1.0"
-tokio = { version = "1.21.1", features = ["full"] }
+tokio = { version = "1.21.2", features = ["full"] }
 
 [[example]]
 name = "http_server"
