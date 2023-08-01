@@ -30,7 +30,7 @@ hyper = { version = "0.14", features = ["full"] }
 lazy_static = "1.4.0"
 log = "0.4"
 prometheus_exporter = "0.8"
-serde = { version = "1.0.177", features = ["derive"] }
+serde = { version = "1.0.180", features = ["derive"] }
 serde-env = "0.1.0"
 tokio = { version = "1.26.0", features = ["full"] }
 
